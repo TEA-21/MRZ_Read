@@ -24,4 +24,5 @@ RUN pip install -r requirements.txt
 EXPOSE 8000
 
 # Run app using shell script
-CMD sh -c "./start.sh"
+CMD sh -c "echo PORT=$PORT; uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+
