@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MRZ Extractor</title>
+</head>
+<body>
+  <h1>MRZ Extractor</h1>
+
+  <label for="frontInput">Upload Front Side:</label><br/>
+  <input type="file" id="frontInput" accept="image/*" /><br/><br/>
+
+  <label for="backInput">Upload Back Side (MRZ):</label><br/>
+  <input type="file" id="backInput" accept="image/*" /><br/><br/>
+
+  <button id="uploadBtn">Upload and Extract MRZ (from Back Side)</button>
+
+  <h2>Front Side:</h2>
+  <img id="frontImg" style="max-width: 300px; display: none;" alt="Front side preview" />
+
+  <h2>Back Side:</h2>
+  <img id="backImg" style="max-width: 300px; display: none;" alt="Back side preview" />
+
+  <h2>Result:</h2>
+  <pre id="result" style="background:#f0f0f0; padding: 1em;"></pre>
+
+  <script>
+    const frontInput = document.getElementById("frontInput");
+    const backInput = document.getElementById("backInput");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const result = document.getElementById("result");
+    const frontImg = document.getElementById("frontImg");
+    const backImg = document.getElementById("backImg");
+
+  // Show local preview of original images when selected (optional)
+    frontInput.addEventListener("change", () => {
+      if (frontInput.files.length) {
+        frontImg.src = URL.createObjectURL(frontInput.files[0]);
+        frontImg.style.display = "block";
+      } else {
+        frontImg.style.display = "none";
+      }
+    });
+
+    backInput.addEventListener("change", () => {
+      if (backInput.files.length) {
+        backImg.src = URL.createObjectURL(backInput.files[0]);
+        backImg.style.display = "block";
+      } else {
+        backImg.style.display = "none";
+      }
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      if (!frontInput.files.length || !backInput.files.length) {
+        alert("Please select both front and back side images.");
+        return;
+      }
+
+      result.textContent = "Removing backgrounds from both images...";
+
+    // Prepare form data for /remove-bg/
+      const bgFormData = new FormData();
+      bgFormData.append("front_file", frontInput.files[0]);
+      bgFormData.append("back_file", backInput.files[0]);
+
+      try {
+      // 1. Remove backgrounds from both images
+        const removeBgResp = await fetch("http://127.0.0.1:8000/remove-bg/", {
+          method: "POST",
+          body: bgFormData,
+        });
+
+        if (!removeBgResp.ok) {
+          const err = await removeBgResp.json();
+          result.textContent = "Error removing background: " + JSON.stringify(err, null, 2);
+          return;
+        }
+
+        const { front_image, back_image } = await removeBgResp.json();
+
+      // Show background-removed images
+        frontImg.src = front_image;
+        frontImg.style.display = "block";
+
+        backImg.src = back_image;
+        backImg.style.display = "block";
+
+        result.textContent = "Extracting MRZ from background-removed back image...";
+
+      // Convert back_image base64 to Blob to send to /extract-mrz/
+        const blob = await (await fetch(back_image)).blob();
+
+        const ocrFormData = new FormData();
+        ocrFormData.append("file", blob, "back_no_bg.png");
+
+      // 2. Send back image without background for MRZ extraction
+        const ocrResp = await fetch("http://127.0.0.1:8000/extract-mrz/", {
+          method: "POST",
+          body: ocrFormData,
+        });
+
+        if (!ocrResp.ok) {
+          const err = await ocrResp.json();
+          result.textContent = "Error extracting MRZ: " + JSON.stringify(err, null, 2);
+          return;
+        }
+
+        const ocrResult = await ocrResp.json();
+        result.textContent = JSON.stringify(ocrResult, null, 2);
+
+      } catch (error) {
+        result.textContent = "Network error: " + error.message;
+      }
+    });
+  </script>
+
+</body>
+</html>
