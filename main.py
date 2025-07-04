@@ -12,7 +12,12 @@ import pytesseract
 from fastapi.responses import StreamingResponse
 import base64
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+import os
+import platform
+
+if platform.system() == "Windows":
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 
 app = FastAPI()
 app.add_middleware(
