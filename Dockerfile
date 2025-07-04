@@ -13,6 +13,9 @@ WORKDIR /app
 # Copy files
 COPY . .
 
+# Make sure the script is executable
+RUN chmod +x start.sh
+
 # Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
@@ -20,5 +23,5 @@ RUN pip install -r requirements.txt
 # Expose port
 EXPOSE 8000
 
-# ✅ CORRECTED CMD (no array syntax)
+# Run app using shell script
 CMD ["./start.sh"]
