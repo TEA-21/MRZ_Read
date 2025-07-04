@@ -24,4 +24,4 @@ RUN pip install -r requirements.txt
 EXPOSE 8000
 
 # Run app using shell script
-CMD ["./start.sh"]
+CMD sh -c "./start.sh"
