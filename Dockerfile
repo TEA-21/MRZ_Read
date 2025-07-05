@@ -10,19 +10,18 @@ RUN apt-get update && apt-get install -y \
 # Set work directory
 WORKDIR /app
 
-# Copy files
+# Copy app files
 COPY . .
 
-# Make sure the script is executable
+# Make the script executable
 RUN chmod +x start.sh
 
 # Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Expose port
+# Expose default port (Railway will override this)
 EXPOSE 8000
 
-# Run app using shell script
-CMD sh -c "echo PORT=$PORT; uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
-
+# 🟢 Important: Run using shell so $PORT works at runtime
+CMD ["sh", "./start.sh"]
